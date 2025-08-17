@@ -73,3 +73,40 @@ class HilbertTransform(nn.Module):
         response = torch.sqrt(mixed_energy + 1e-8)  # [b, c, h, w]
 
         return response
+
+
+@torch.no_grad()
+def clip_grad_norm(parameters, max_norm=float("inf"), apply_wirtinger_scale=True):
+    norms = []
+    grad = torch.tensor(0.0)
+    for p in parameters:
+        if p.grad is not None:
+            grad = p.grad
+            if p.is_complex() and apply_wirtinger_scale:
+                grad = (
+                    grad * 0.5
+                )  # 转为标准Wirtinger梯度！请注意这一点，见后文WirtingerAdamW
+            # 计算 |grad|²
+            param_norm_sq = (
+                torch.sum(grad.real**2 + grad.imag**2).detach().clone()
+                if grad.is_complex()
+                else torch.sum(grad**2).detach().clone()
+            )
+            norms.append(param_norm_sq)
+
+    total_norm_sq = (
+        torch.sum(torch.stack(norms))
+        if norms
+        else torch.tensor(0.0, device=grad.device)
+    )
+    total_norm = total_norm_sq.sqrt().item()
+
+    # 裁剪
+    if max_norm != float("inf"):
+        if total_norm > max_norm:
+            clip_coef = max_norm / (total_norm + 1e-6)
+            for p in parameters:
+                if p.grad is not None:
+                    p.grad.data.mul_(clip_coef)
+
+    return total_norm
