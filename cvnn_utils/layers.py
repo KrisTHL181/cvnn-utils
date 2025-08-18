@@ -89,10 +89,10 @@ class ComplexResBlock(ComplexModule):
     def __init__(self, channels):
         super().__init__()
         self.conv1 = ComplexConv2d(channels, channels, 3, padding=1)
-        self.norm1 = ComplexBatchNorm2d(channels)
+        self.norm1 = ComplexStandardBatchNorm2d(channels)
         self.relu = ComplexModLeakyReLU(channels)
         self.conv2 = ComplexConv2d(channels, channels, 3, padding=1)
-        self.norm2 = ComplexBatchNorm2d(channels)
+        self.norm2 = ComplexStandardBatchNorm2d(channels)
 
     def forward(self, x):
         residual = x
@@ -115,7 +115,7 @@ class ComplexDownsampleBlock(ComplexModule):
             padding=1,
             bias=False,
         )
-        self.norm = ComplexBatchNorm2d(out_channels)
+        self.norm = ComplexStandardBatchNorm2d(out_channels)
         self.act = ComplexModLeakyReLU(out_channels)
 
     def forward(self, x):
