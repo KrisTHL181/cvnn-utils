@@ -100,14 +100,19 @@ class ComplexDownsampleBlock(ComplexModule):
 
 
 class ComplexCovarianceBatchNorm2d(ComplexModule):
-    def __init__(self, num_features, eps=1e-4, momentum=0.1, affine=True):
+    def __init__(
+        self,
+        num_features: int,
+        eps: float = 1e-4,
+        momentum: float = 0.1,
+        affine: bool = True,
+    ):
         super().__init__()
         self.num_features = num_features
         self.eps = eps
         self.momentum = momentum
         self.affine = affine
 
-        # 仿射参数（可选）
         if self.affine:
             self.gamma_rr = nn.Parameter(torch.ones(num_features))
             self.gamma_ii = nn.Parameter(torch.ones(num_features))
@@ -121,30 +126,32 @@ class ComplexCovarianceBatchNorm2d(ComplexModule):
             self.register_buffer("beta_r", torch.zeros(num_features))
             self.register_buffer("beta_i", torch.zeros(num_features))
 
-        # 运行统计
+        # Running statistics
         self.register_buffer("running_Vrr", torch.ones(num_features))
         self.register_buffer("running_Vii", torch.ones(num_features))
         self.register_buffer("running_Vri", torch.zeros(num_features))
         self.register_buffer("running_mean_r", torch.zeros(num_features))
         self.register_buffer("running_mean_i", torch.zeros(num_features))
 
-    def forward(self, z):
+    def forward(self, z: torch.Tensor) -> torch.Tensor:
         B, C, H, W = z.shape
+        training = self.training
 
-        # 展平空间维度
-        zr = z.real.transpose(0, 1).reshape(C, -1)  # [C, B*H*W]
-        zi = z.imag.transpose(0, 1).reshape(C, -1)
+        zr = z.real  # [B, C, H, W]
+        zi = z.imag
 
-        # 计算 batch 统计量
-        mean_r = zr.mean(dim=1)
-        mean_i = zi.mean(dim=1)
+        mean_r = zr.mean(dim=[0, 2, 3])
+        mean_i = zi.mean(dim=[0, 2, 3])
 
-        Vrr = zr.var(dim=1) + self.eps
-        Vii = zi.var(dim=1) + self.eps
-        Vri = (zr * zi).mean(dim=1) - mean_r * mean_i
+        centered_r = zr - mean_r.view(1, C, 1, 1)
+        centered_i = zi - mean_i.view(1, C, 1, 1)
 
-        if self.training:
-            # 更新运行统计
+        Vrr = centered_r.var(dim=[0, 2, 3]) + self.eps  # Var(real)
+        Vii = centered_i.var(dim=[0, 2, 3]) + self.eps  # Var(imag)
+        Vri = (centered_r * centered_i).mean(dim=[0, 2, 3])  # Cov(real, imag)
+
+        if training:
+            # Update running stats
             self.running_mean_r = (
                 1 - self.momentum
             ) * self.running_mean_r + self.momentum * mean_r
@@ -167,40 +174,47 @@ class ComplexCovarianceBatchNorm2d(ComplexModule):
             Vii = self.running_Vii
             Vri = self.running_Vri
 
-        # 白化变换（使用协方差矩阵求逆）
-        det = Vrr * Vii - Vri**2
-        denom = det.sqrt()
-        denom = denom.clamp(min=self.eps)
-
-        # 逆协方差矩阵乘法（仿射变换）
-        A_rr = Vii / denom
-        A_ii = Vrr / denom
-        A_ri = -Vri / denom
-
         # 白化
-        xr = (z.real - mean_r.view(1, C, 1, 1)) * A_rr.view(1, C, 1, 1)
-        xi = (z.imag - mean_i.view(1, C, 1, 1)) * A_ii.view(1, C, 1, 1)
-        cross = (z.real - mean_r.view(1, C, 1, 1)) * A_ri.view(1, C, 1, 1)
-        xr = xr + cross
-        xi = xi + cross
+        det = (Vrr * Vii - Vri**2).clamp(min=self.eps)
+        inv_sqrt_det = det.rsqrt()  # 1 / sqrt(det)
 
-        # 仿射变换
+        # C^{-1/2}
+        A_rr = Vii  # coefficient for real  -> real
+        A_ii = Vrr  # coefficient for imag -> imag
+        A_ri = -Vri  # cross-term
+
+        inv_sqrt_det = inv_sqrt_det.view(1, C, 1, 1)
+        A_rr = A_rr.view(1, C, 1, 1)
+        A_ii = A_ii.view(1, C, 1, 1)
+        A_ri = A_ri.view(1, C, 1, 1)
+
+        # [out_r, out_i] = C^{-1/2} @ [centered_r, centered_i]
+        out_r = inv_sqrt_det * (A_rr * centered_r + A_ri * centered_i)
+        out_i = inv_sqrt_det * (A_ri * centered_r + A_ii * centered_i)
+
+        # 仿射变换（实线性）
         if self.affine:
-            out_r = (
-                self.gamma_rr.view(1, C, 1, 1) * xr
-                - self.gamma_ri.view(1, C, 1, 1) * xi
+            final_r = (
+                self.gamma_rr.view(1, C, 1, 1) * out_r
+                - self.gamma_ri.view(1, C, 1, 1) * out_i
                 + self.beta_r.view(1, C, 1, 1)
             )
-            out_i = (
-                self.gamma_ri.view(1, C, 1, 1) * xr
-                + self.gamma_ii.view(1, C, 1, 1) * xi
+            final_i = (
+                self.gamma_ri.view(1, C, 1, 1) * out_r
+                + self.gamma_ii.view(1, C, 1, 1) * out_i
                 + self.beta_i.view(1, C, 1, 1)
             )
         else:
-            out_r = xr
-            out_i = xi
+            final_r = out_r
+            final_i = out_i
 
-        return torch.complex(out_r, out_i)
+        return torch.complex(final_r, final_i)
+
+    def extra_repr(self) -> str:
+        return (
+            f"num_features={self.num_features}, eps={self.eps}, "
+            f"momentum={self.momentum}, affine={self.affine}"
+        )
 
 
 class ComplexStandardBatchNorm2d(ComplexModule):
