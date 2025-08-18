@@ -1,9 +1,19 @@
 from setuptools import setup, find_packages
-from cvnn_utils import __version__
+import os
+
+
+def get_version():
+    here = os.path.abspath(os.path.dirname(__file__))
+    with open(os.path.join(here, "cvnn_utils", "__init__.py"), encoding="utf-8") as f:
+        for line in f:
+            if line.startswith("__version__"):
+                return line.split("=")[1].strip().strip("\"'")
+    raise RuntimeError("Cannot find version")
+
 
 setup(
     name="cvnn-utils",
-    version=__version__,
+    version=get_version(),
     description="A lightweight, principled toolkit for Complex-Valued Neural Networks in PyTorch.",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
