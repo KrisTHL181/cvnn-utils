@@ -48,10 +48,7 @@ from .layers import (
     ComplexDropout,
 )
 
-from .activations import (
-    ComplexModLeakyReLU,
-    ComplexModGELU,
-)
+from .activations import ComplexModLeakyReLU, ComplexGatedGELU
 
 from .optimizer import WirtingerAdamW
 
@@ -78,7 +75,7 @@ __all__ = [
     "ComplexAvgPool2d",
     # 激活
     "ComplexModLeakyReLU",
-    "ComplexModGELU",
+    "ComplexGatedGELU",
     # 优化
     "WirtingerAdamW",
     # 工具

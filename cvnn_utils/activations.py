@@ -25,7 +25,7 @@ class ComplexModLeakyReLU(ComplexModule):
         return new_mag * unit
 
 
-class ComplexModGELU(nn.Module):
+class ComplexGatedGELU(nn.Module):
     def __init__(self, learnable_bias=False, approximation="tanh"):
         super().__init__()
         self.approximation = approximation
