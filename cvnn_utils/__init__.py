@@ -1,7 +1,7 @@
 import torch
 
 # This is used by setup.py and CI/CD. Format: X.Y.Z
-__version__ = "0.1.5"
+__version__ = "0.1.6"
 
 
 class ComplexModule(torch.nn.Module):
@@ -39,10 +39,10 @@ from .layers import (
     # ComplexConv1d,
     ComplexConv2d,
     # ComplexConv3d,
-    ComplexToReal,
     ComplexResBlock,
     ComplexDownsampleBlock,
-    ComplexBatchNorm2d,
+    ComplexStandardBatchNorm2d,
+    ComplexCovarianceBatchNorm2d,
     ComplexAdaptiveAvgPool2d,
     ComplexAvgPool2d,
     ComplexDropout,
@@ -70,10 +70,10 @@ __all__ = [
     # "ComplexConv1d",
     "ComplexConv2d",
     # "ComplexConv3d",
-    "ComplexToReal",
     "ComplexResBlock",
     "ComplexDownsampleBlock",
-    "ComplexBatchNorm2d",
+    "ComplexStandardBatchNorm2d",
+    "ComplexCovarianceBatchNorm2d",
     "ComplexAdaptiveAvgPool2d",
     "ComplexAvgPool2d",
     # 激活

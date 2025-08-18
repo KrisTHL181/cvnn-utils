@@ -50,12 +50,12 @@ class HilbertTransform(nn.Module):
 
         # 1. 各向同性核: -i (所有非DC频率)
         isotropic_kernel = torch.where(
-            R_clamp == 0, 0.0 + 0j, -1j * torch.ones_like(R_clamp)
+            R_clamp == 0, 0.0 + 0j, -1j * torch.ones_like(R_clamp)  # type: ignore
         )
 
         # 2. Riesz 核
-        riesz_y_kernel = torch.where(R_clamp == 0, 0.0 + 0j, -1j * FY / R_clamp)
-        riesz_x_kernel = torch.where(R_clamp == 0, 0.0 + 0j, -1j * FX / R_clamp)
+        riesz_y_kernel = torch.where(R_clamp == 0, 0.0 + 0j, -1j * FY / R_clamp)  # type: ignore
+        riesz_x_kernel = torch.where(R_clamp == 0, 0.0 + 0j, -1j * FX / R_clamp)  # type: ignore
 
         # FFT
         freq = torch.fft.fft2(image, dim=(-2, -1))  # [b, c, h, w]
