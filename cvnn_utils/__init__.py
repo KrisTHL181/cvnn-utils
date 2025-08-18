@@ -1,5 +1,6 @@
 import torch
 
+# This is used by setup.py and CI/CD. Format: X.Y.Z
 __version__ = "0.1.5"
 
 
