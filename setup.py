@@ -1,8 +1,9 @@
 from setuptools import setup, find_packages
+from cvnn_utils import __version__
 
 setup(
     name="cvnn-utils",
-    version="0.1.0",
+    version=__version__,
     description="A lightweight, principled toolkit for Complex-Valued Neural Networks in PyTorch.",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
