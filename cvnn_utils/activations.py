@@ -26,26 +26,27 @@ class ComplexModLeakyReLU(ComplexModule):
 
 
 class ComplexModGELU(nn.Module):
-    def __init__(self, learnable_bias=True):
+    def __init__(self, learnable_bias=True, approximation="tanh"):
         super().__init__()
+        self.approximation = approximation
+
         if learnable_bias:
             self.bias = nn.Parameter(torch.tensor(0.0))
         else:
-            self.bias = 0.0
+            self.register_buffer("bias", torch.tensor(0.0))
+
         self.register_buffer("sqrt_2_over_pi", torch.sqrt(torch.tensor(2.0 / torch.pi)))
+        self.register_buffer("sqrt_2", torch.sqrt(torch.tensor(2.0)))
 
     def forward(self, z):
-        bias_value = (
-            self.bias.item() if isinstance(self.bias, nn.Parameter) else self.bias
-        )
-        if bias_value != 0.0:
-            mag = torch.abs(z)
-            gate = 0.5 * (
-                1 + torch.erf((mag + bias_value) / torch.sqrt(torch.tensor(2.0)))
-            )
-            return z * gate
-        else:
-            r = torch.abs(z)
-            inner = self.sqrt_2_over_pi * (r + bias_value + 0.044715 * r**3)  # type: ignore
+        mag = torch.abs(z) + self.bias
+
+        if self.approximation == "erf":
+            gate = 0.5 * (1 + torch.erf(mag / self.sqrt_2))  # type: ignore
+        elif self.approximation == "tanh":
+            inner = self.sqrt_2_over_pi * (mag + 0.044715 * mag**3)  # type: ignore
             gate = 0.5 * (1 + torch.tanh(inner))
-            return z * gate
+        else:
+            raise ValueError(f"Unknown approximation: {self.approximation}")
+
+        return z * gate
