@@ -57,32 +57,6 @@ class ComplexConv2d(ComplexModule):
         )
 
 
-class ComplexToReal(nn.Module):
-    """将复数特征线性映射到实数logits（健壮实现）"""
-
-    def __init__(self, in_features, out_features):
-        super().__init__()
-        self.weight_real = nn.Parameter(torch.randn(out_features, in_features))
-        self.weight_imag = nn.Parameter(torch.randn(out_features, in_features))
-        self.bias = nn.Parameter(torch.zeros(out_features))
-
-        # Kaiming初始化（complex -> real中的简单变体）
-
-        nn.init.zeros_(self.bias)
-
-    def forward(self, z):
-        """自动处理任意形状的复数输入"""
-        batch_size = z.size(0)
-        z_flat = z.view(batch_size, -1)  # 展平空间维度
-
-        # 实现 Re(W·z) = W_r*z_r + W_i*z_i
-        return (
-            torch.mm(z_flat.real, self.weight_real.t())
-            + torch.mm(z_flat.imag, self.weight_imag.t())
-            + self.bias
-        )
-
-
 class ComplexResBlock(ComplexModule):
     """复数残差块 (关键: 防止梯度消失)"""
 
