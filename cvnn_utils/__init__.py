@@ -1,6 +1,6 @@
 import torch
 
-__version__ = "0.1.4"
+__version__ = "0.1.5"
 
 
 class ComplexModule(torch.nn.Module):
@@ -44,6 +44,7 @@ from .layers import (
     ComplexBatchNorm2d,
     ComplexAdaptiveAvgPool2d,
     ComplexAvgPool2d,
+    ComplexDropout,
 )
 
 from .activations import (
@@ -63,6 +64,7 @@ __all__ = [
     "ComplexModule",
     "ComplexIsNotRsqWarning",
     # 层
+    "ComplexDropout",
     "ComplexLinear",
     # "ComplexConv1d",
     "ComplexConv2d",

@@ -315,3 +315,30 @@ class ComplexAvgPool2d(nn.Module):
             F.avg_pool2d(z.real, self.kernel_size, self.stride, self.padding),
             F.avg_pool2d(z.imag, self.kernel_size, self.stride, self.padding),
         )
+
+
+class ComplexDropout(ComplexModule):
+    def __init__(self, p=0.5, mode="structural"):
+        super().__init__()
+        if mode not in ["structural", "magnitude"]:
+            raise ValueError("Mode must be 'structural' or 'magnitude'")
+        self.p = p
+        self.mode = mode
+
+    def forward(self, z):
+        if not self.training:
+            return z
+
+        if self.mode == "structural":
+            mask = torch.rand(z.shape[0], 1, *z.shape[2:], device=z.device) > self.p
+            mask = mask.expand_as(z).to(z.dtype)
+            return z * mask / (1 - self.p)
+
+        elif self.mode == "magnitude":
+            mag = z.abs()
+            mask = torch.rand_like(mag) > self.p
+            mag_drop = mag * mask / (1 - self.p)
+            return z * (mag_drop / (mag + 1e-8))
+
+    def extra_repr(self):
+        return f"p={self.p}, mode={self.mode}"
