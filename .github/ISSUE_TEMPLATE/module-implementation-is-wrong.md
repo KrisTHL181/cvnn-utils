@@ -2,7 +2,7 @@
 name: Module implementation is wrong
 about: The implementation of some module is wrong
 title: "[Incorrect implement]"
-labels: bug
+labels: math bug
 assignees: ''
 
 ---
