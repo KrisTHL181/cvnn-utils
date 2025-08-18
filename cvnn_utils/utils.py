@@ -19,9 +19,9 @@ class HilbertTransform(nn.Module):
     def __init__(self, alpha: float = 0):
         super().__init__()
         self.alpha = nn.Parameter(torch.tensor(alpha, dtype=torch.float64))
-        self.register_buffer("_cache_fy", None)
-        self.register_buffer("_cache_fx", None)
-        self.register_buffer("_cache_R_clamp", None)
+        self.register_buffer("_cache_fy", None, persistent=False)
+        self.register_buffer("_cache_fx", None, persistent=False)
+        self.register_buffer("_cache_R_clamp", None, persistent=False)
         self._cache_h = None
         self._cache_w = None
 
@@ -41,9 +41,9 @@ class HilbertTransform(nn.Module):
 
         if h != self._cache_h or w != self._cache_w:
             FY, FX, R_clamp = self._create_kernels(h, w, image)
-            self.register_buffer("_cache_fy", FY)
-            self.register_buffer("_cache_fx", FX)
-            self.register_buffer("_cache_R_clamp", R_clamp)
+            self._cache_fy = FY
+            self._cache_fx = FX
+            self._cache_R_clamp = R_clamp
             self._cache_h, self._cache_w = h, w
         else:
             FY, FX, R_clamp = self._cache_fy, self._cache_fx, self._cache_R_clamp
