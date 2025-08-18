@@ -5,7 +5,7 @@
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![PyTorch](https://img.shields.io/badge/PyTorch-1.8%2B-orange.svg)](https://pytorch.org)
-[![Python](https://img.shields.io/badge/Python-3.7%2B-green.svg)](https://python.org)
+[![Python](https://img.shields.io/badge/Python-3.9%2B-green.svg)](https://python.org)
 [![Code style](https://img.shields.io/badge/code%20style-black-black.svg)](https://github.com/psf/black)
 
 ---
@@ -79,7 +79,7 @@ model = torch.nn.Sequential(
     cvnn.ComplexConv2d(3, 64, 3, padding=1),
     cvnn.ComplexStandardBatchNorm2d(64),
     cvnn.ComplexModLeakyReLU(64),
-    cvnn.ComplexGlobalAvgPool2d(),  # Only valid complex pooling
+    cvnn.ComplexConv2d(64, 64, 3, stride=2, padding=1),  # not pooling!
     torch.nn.Flatten()
 )
 
