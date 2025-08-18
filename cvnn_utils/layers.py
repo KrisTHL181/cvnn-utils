@@ -57,18 +57,25 @@ class ComplexConv2d(ComplexModule):
 class ComplexResBlock(ComplexModule):
     """复数残差块 (关键: 防止梯度消失)"""
 
-    def __init__(self, channels):
+    def __init__(self, channels, bn=None, act=None):
         super().__init__()
         self.conv1 = ComplexConv2d(channels, channels, 3, padding=1)
-        self.norm1 = ComplexStandardBatchNorm2d(channels)
-        self.relu = ComplexModLeakyReLU(channels)
+        if bn is None:
+            self.norm1 = ComplexStandardBatchNorm2d(channels)
+            self.norm2 = ComplexStandardBatchNorm2d(channels)
+        else:
+            self.norm1 = bn(channels)
+            self.norm2 = bn(channels)
+        if act is None:
+            self.act = ComplexModLeakyReLU(channels)
+        else:
+            self.act = act(channels)
         self.conv2 = ComplexConv2d(channels, channels, 3, padding=1)
-        self.norm2 = ComplexStandardBatchNorm2d(channels)
 
     def forward(self, x):
         residual = x
         out = self.norm1(self.conv1(x))
-        out = self.relu(out)
+        out = self.act(out)
         out = self.norm2(self.conv2(out))
         return out + residual
 
@@ -76,7 +83,7 @@ class ComplexResBlock(ComplexModule):
 class ComplexDownsampleBlock(ComplexModule):
     """用于升维和下采样的复数块"""
 
-    def __init__(self, in_channels, out_channels, stride=2):
+    def __init__(self, in_channels, out_channels, stride=2, bn=None, act=None):
         super().__init__()
         self.conv = ComplexConv2d(
             in_channels,
@@ -86,8 +93,14 @@ class ComplexDownsampleBlock(ComplexModule):
             padding=1,
             bias=False,
         )
-        self.norm = ComplexStandardBatchNorm2d(out_channels)
-        self.act = ComplexModLeakyReLU(out_channels)
+        if bn is None:
+            self.norm = ComplexStandardBatchNorm2d(out_channels)
+        else:
+            self.norm = bn(out_channels)
+        if act is None:
+            self.act = ComplexModLeakyReLU(out_channels)
+        else:
+            self.act = act(out_channels)
 
     def forward(self, x):
         x = self.conv(x)
