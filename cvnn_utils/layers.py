@@ -21,7 +21,6 @@ class ComplexLinear(ComplexModule):
             torch.complex(torch.zeros(out_features), torch.zeros(out_features))
         )
         complex_kaiming_(self.weight.real, self.weight.imag, in_features)
-        complex_kaiming_(self.bias.real, self.bias.imag, in_features)
 
     def forward(self, x):
         return torch.matmul(x, self.weight.t()) + self.bias
@@ -48,8 +47,6 @@ class ComplexConv2d(ComplexModule):
         self.padding = padding
         self.stride = stride
         complex_kaiming_(self.weight.real, self.weight.imag, in_channels)
-        if bias is not None:
-            complex_kaiming_(self.bias.real, self.bias.imag, in_channels)  # type: ignore
 
     def forward(self, x):
         return F.conv2d(
