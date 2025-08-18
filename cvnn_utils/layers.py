@@ -125,7 +125,7 @@ class ComplexDownsampleBlock(ComplexModule):
         return x
 
 
-class ComplexBatchNorm2d(ComplexModule):
+class ComplexCovarianceBatchNorm2d(ComplexModule):
     def __init__(self, num_features, eps=1e-4, momentum=0.1, affine=True):
         super().__init__()
         self.num_features = num_features
@@ -227,6 +227,66 @@ class ComplexBatchNorm2d(ComplexModule):
             out_i = xi
 
         return torch.complex(out_r, out_i)
+
+
+class ComplexStandardBatchNorm2d(ComplexModule):
+    def __init__(self, num_features, eps=1e-4, momentum=0.1, affine=True):
+        super().__init__()
+        self.num_features = num_features
+        self.eps = eps
+        self.momentum = momentum
+        self.affine = affine
+
+        if self.affine:
+            self.weight = nn.Parameter(torch.ones(num_features, dtype=torch.complex64))
+            self.bias = nn.Parameter(torch.zeros(num_features, dtype=torch.complex64))
+        else:
+            self.register_buffer(
+                "weight", torch.ones(num_features, dtype=torch.complex64)
+            )
+            self.register_buffer(
+                "bias", torch.zeros(num_features, dtype=torch.complex64)
+            )
+
+        # 运行统计（复数形式）
+        self.register_buffer(
+            "running_mean", torch.zeros(num_features, dtype=torch.complex64)
+        )
+        self.register_buffer(
+            "running_var", torch.ones(num_features, dtype=torch.float32)
+        )
+
+    def forward(self, z):
+        if self.training:
+            mean = z.mean(dim=[0, 2, 3])
+
+            # 2. 计算模长方差（|z - μ|²，复数域自然度量）
+            centered = z - mean.view(1, self.num_features, 1, 1)
+            mag_sq = centered.real**2 + centered.imag**2  # |z - μ|²
+            var = mag_sq.mean(dim=[0, 2, 3])  # E[|z - μ|²] - 实数标量
+
+            # 3. 更新运行统计
+            self.running_mean = (
+                1 - self.momentum
+            ) * self.running_mean + self.momentum * mean
+            self.running_var = (
+                1 - self.momentum
+            ) * self.running_var + self.momentum * var
+        else:
+            mean, var = self.running_mean, self.running_var
+
+        # 4. 复数白化（但保持相位等变性）
+        std = torch.sqrt(var + self.eps)
+        z_norm = (z - mean.view(1, self.num_features, 1, 1)) / std.view(
+            1, self.num_features, 1, 1
+        )
+
+        # 5. 复数仿射变换（保持复线性）
+        if self.affine:
+            return z_norm * self.weight.view(
+                1, self.num_features, 1, 1
+            ) + self.bias.view(1, self.num_features, 1, 1)
+        return z_norm
 
 
 class ComplexAdaptiveAvgPool2d(ComplexModule):
