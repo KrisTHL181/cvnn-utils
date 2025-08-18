@@ -26,7 +26,7 @@ class ComplexModLeakyReLU(ComplexModule):
 
 
 class ComplexModGELU(nn.Module):
-    def __init__(self, learnable_bias=True, approximation="tanh"):
+    def __init__(self, learnable_bias=False, approximation="tanh"):
         super().__init__()
         self.approximation = approximation
 

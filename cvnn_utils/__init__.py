@@ -1,6 +1,6 @@
 import torch
 
-__version__ = "0.1.2"
+__version__ = "0.1.4"
 
 
 class ComplexModule(torch.nn.Module):
