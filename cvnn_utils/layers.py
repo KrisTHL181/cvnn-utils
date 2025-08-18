@@ -318,10 +318,10 @@ class ComplexAvgPool2d(nn.Module):
 
 
 class ComplexDropout(ComplexModule):
-    def __init__(self, p=0.5, mode="structural"):
+    def __init__(self, p=0.5, mode="element"):
         super().__init__()
-        if mode not in ["structural", "magnitude"]:
-            raise ValueError("Mode must be 'structural' or 'magnitude'")
+        if mode not in ["element", "channel", "spatial"]:
+            raise ValueError("Mode must be 'element', 'channel', or 'spatial'")
         self.p = p
         self.mode = mode
 
@@ -329,16 +329,21 @@ class ComplexDropout(ComplexModule):
         if not self.training:
             return z
 
-        if self.mode == "structural":
-            mask = torch.rand(z.shape[0], 1, *z.shape[2:], device=z.device) > self.p
-            mask = mask.expand_as(z).to(z.dtype)
+        if self.mode == "element":
+            mask = (torch.rand_like(z.real) > self.p).to(z.dtype)
             return z * mask / (1 - self.p)
 
-        elif self.mode == "magnitude":
-            mag = z.abs()
-            mask = torch.rand_like(mag) > self.p
-            mag_drop = mag * mask / (1 - self.p)
-            return z * (mag_drop / (mag + 1e-8))
+        elif self.mode == "channel":
+            mask = (
+                torch.rand(z.shape[0], z.shape[1], 1, 1, device=z.device) > self.p
+            ).to(z.dtype)
+            return z * mask / (1 - self.p)
+
+        elif self.mode == "spatial":
+            mask = (
+                torch.rand(z.shape[0], 1, *z.shape[2:], device=z.device) > self.p
+            ).to(z.dtype)
+            return z * mask / (1 - self.p)
 
     def extra_repr(self):
         return f"p={self.p}, mode={self.mode}"
