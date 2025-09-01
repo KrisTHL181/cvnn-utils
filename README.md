@@ -66,6 +66,8 @@ Most so-called "complex-valued neural networks" (CVNNs) in deep learning **are n
 
 ```bash
 pip install git+https://github.com/KrisTHL181/cvnn-utils.git
+ # or
+pip install cvnn-utils
 ```
 
 ### Basic Usage
@@ -226,13 +228,28 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ---
 
-
 ## 🌟 Join the Movement
 
 Stop pretending complex numbers are just two real numbers.
 Start building neural networks that **respect the algebraic structure of ℂ**.
 
 **cvnn-utils** is the first step toward *mathematically correct* complex-valued deep learning.
+
+
+
+## 📚 Citation
+
+If you use this library in academic work, please cite:
+
+```bibtex
+@software{cvnnutils2025,
+  author = {KrisTHL181},
+  title  = {cvnn-utils: A FULL-COMPLEX CVNN Tool Pack},
+  year   = {2025},
+  url    = {https://github.com/KrisTHL181/cvnn-utils}
+}
+```
+
 
 ---
 
